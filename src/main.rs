@@ -1,28 +1,25 @@
-use std::fs;
+use itertools::Itertools;
 
-fn main() {
-    let mut most_calories = 0;
-    let mut all_sum: Vec<i32> = Vec::new();
+fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
 
-    let contents =
-        fs::read_to_string("./input.txt").expect("Should have been able to read the file");
+    let args: Vec<String> = std::env::args().collect_vec();
 
-    let mut sum = 0;
-    contents.lines().for_each(|x| {
-        let val = x.parse::<i32>();
-        match val {
-            Result::Ok(val) => sum += val,
-            Result::Err(_err) => {
-                if sum >= most_calories {
-                    most_calories = sum;
-                }
-                all_sum.push(sum);
-                sum = 0;
+    let lines = include_str!("../input.txt")
+        .lines()
+        .map(|v| v.parse::<u64>().ok())
+        .batching(|it| {
+            let mut sum = None;
+            while let Some(Some(v)) = it.next() {
+                sum = Some(sum.unwrap_or(0) + v);
             }
-        }
-    });
-    all_sum.sort_by(|a, b| b.cmp(a));
-    println!("Most calories: {most_calories}");
-    println!("Top : {:?}", &all_sum[0..3]);
-    println!("Sum of top: {:?}", &all_sum[0] + &all_sum[1] + &all_sum[2]);
+            sum
+        })
+        .sorted_by_key(|&v| std::cmp::Reverse(v))
+        .take(args[1].parse::<usize>().unwrap())
+        .sum::<u64>();
+
+    println!("{lines:?}");
+
+    Ok(())
 }
